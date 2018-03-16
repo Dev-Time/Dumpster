@@ -3,4 +3,4 @@ project(Dumpster)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(Dumpster src/main.cpp)
+add_executable(rm src/rm.cpp)
