@@ -10,6 +10,7 @@
 #include <vector>
 #include <zconf.h>
 #include <algorithm>
+#include <errno.h>
 
 /* (shown here for reference)
 struct  dirent {
@@ -29,6 +30,7 @@ int main(int argc, char* argv[]) {
     vector<string> filesToRemove;
     string dumpsterPath;
     string dumpsterEnvVar = "DUMPSTER";
+    string workDir = get_current_dir_name();
     
     dumpsterPath = getenv(dumpsterEnvVar.c_str());
     
@@ -44,7 +46,7 @@ int main(int argc, char* argv[]) {
         exit(2);
     }
     
-    dump = opendir(get_current_dir_name());
+    dump = opendir(workDir.c_str());
     if (dump == nullptr) {
         perror("open");
         exit(1);
@@ -72,6 +74,20 @@ int main(int argc, char* argv[]) {
     
     for (const auto &i : entries) {
         cout << i->d_name << endl;
+        
+        string oldfile = workDir + "/" + i->d_name;
+        string newfile = dumpsterPath + "/" + i->d_name;
+        
+        if (link(oldfile.c_str(), newfile.c_str()) != 0) {
+            cout << "link error" << endl;
+            cout << errno << endl;
+        }
+        
+        if (unlink(oldfile.c_str()) != 0) {
+            cout << "unlink error" << endl;
+            cout << errno << endl;
+            cout << workDir.append("/").append(i->d_name) << endl;
+        }
     }
     
     closedir(dump);
