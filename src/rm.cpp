@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <errno.h>
 #include <unistd.h>
+#include <cstring>
 
 /* (shown here for reference)
 struct  dirent {
@@ -22,6 +23,18 @@ struct  dirent {
 */
 
 using namespace std;
+
+bool contains(struct dirent* tofind, vector<struct dirent*> vector) {
+    bool found = false;
+    
+    for (auto &i : vector) {
+        if (strcmp(i->d_name, tofind->d_name) == 0) {
+            found = true;
+            return found;
+        }
+    }
+    return found;
+}
 
 int main(int argc, char* argv[]) {
     DIR* curdir;
@@ -94,6 +107,10 @@ int main(int argc, char* argv[]) {
     for (const auto &i : currentdirentries) {
 //        cout << i->d_name << endl;
         
+        if (contains(i, dumpdirentries)) {
+            exit(200);
+        }
+        
         string oldfile = workDir + "/" + i->d_name;
         string newfile = dumpsterPath + "/" + i->d_name;
         
@@ -118,5 +135,6 @@ int main(int argc, char* argv[]) {
     }
     
     closedir(curdir);
+    closedir(dumpdir);
     return 0;
 }
