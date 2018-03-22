@@ -1,5 +1,6 @@
 //
 // Created by Luke Gardner on 3/20/18.
+// export DUMPSTER=/home/student/DUMPSTER/
 //
 
 #include <iostream>
@@ -56,9 +57,6 @@ int main(int argc, char* argv[]) {
     } else {
         fileName = argv[1];
     }
-
-    // TEST
-    printf("input: %s", argv[1]);
 
     curdir = opendir(workDir.c_str());
     if (curdir == nullptr) {
