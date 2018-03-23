@@ -10,6 +10,10 @@
 #include <cstring>
 #include <libgen.h>
 #include <sys/stat.h>
+#include <fcntl.h>
+#include <utime.h>
+#include <sys/time.h>
+#include <sys/types.h>
 
 /* (shown here for reference)
 struct  dirent {
@@ -51,9 +55,78 @@ bool contains(char* tofind, vector<struct dirent*> vector) {
     return found;
 }
 
+int cp(const char *to, const char *from)
+{
+    int fd_to, fd_from;
+    char buf[4096];
+    ssize_t nread;
+    int saved_errno;
+    
+    fd_from = open(from, O_RDONLY);
+    if (fd_from < 0)
+        return -1;
+    
+    fd_to = open(to, O_WRONLY | O_CREAT | O_EXCL, 0666);
+    if (fd_to < 0)
+        goto out_error;
+    
+    while (nread = read(fd_from, buf, sizeof buf), nread > 0)
+    {
+        char *out_ptr = buf;
+        ssize_t nwritten;
+        
+        do {
+            nwritten = write(fd_to, out_ptr, nread);
+            
+            if (nwritten >= 0)
+            {
+                nread -= nwritten;
+                out_ptr += nwritten;
+            }
+            else if (errno != EINTR)
+            {
+                goto out_error;
+            }
+        } while (nread > 0);
+    }
+    
+    if (nread == 0)
+    {
+        if (close(fd_to) < 0)
+        {
+            fd_to = -1;
+            goto out_error;
+        }
+        close(fd_from);
+    
+        auto * stat1 = static_cast<struct stat *>(malloc(sizeof(struct stat)));
+        stat(from, stat1);
+        
+        unlink(from);
+        chown(to, stat1->st_uid, stat1->st_gid);
+        chmod(to, stat1->st_mode);
+        struct utimbuf times;
+//        times.actime = stat1->st_mtim;
+//        utime(to, )
+        
+        /* Success! */
+        return 0;
+    }
+    
+    out_error:
+    saved_errno = errno;
+    
+    close(fd_from);
+    if (fd_to >= 0)
+        close(fd_to);
+    
+    errno = saved_errno;
+    return -1;
+}
+
 //remove each file in vector
-void processFiles(vector<string> filesToRemove, const string &workDir, bool skipDumpster, const string &dumpsterPath, bool recursive,
-                  const vector<struct dirent*> &dumpdirentries) {
+void processFiles(vector<string> filesToRemove, string workDir, bool skipDumpster, string dumpsterPath, bool recursive,
+                  vector<dirent *> dumpdirentries, dev_t dumpDisk) {
     
     //for each string in files to remove
     for (string &i : filesToRemove) {
@@ -118,13 +191,21 @@ void processFiles(vector<string> filesToRemove, const string &workDir, bool skip
                 }
             }
             
-            //rename, and exit if error
-            if (rename(oldfile.c_str(), newfile.c_str()) != 0) {
-                cout << "rename error" << endl;
-                cout << errno << endl;
-                cout << oldfile << endl;
-                exit(-4);
+            //check if on same partition
+            if (stat1->st_dev == dumpDisk) {
+                //rename, and exit if error
+                if (rename(oldfile.c_str(), newfile.c_str()) != 0) {
+                    cout << "rename error" << endl;
+                    cout << errno << endl;
+                    cout << oldfile << endl;
+                    exit(-4);
+                }
+            //else, not on same partition
+            } else {
+            
             }
+            
+            
             
             //if we are skipping the dumpster
         } else {
@@ -158,7 +239,7 @@ void processFiles(vector<string> filesToRemove, const string &workDir, bool skip
                 closedir(dp);
                 
                 //recursive call
-                processFiles(filesInFolder, workDir + "/" + i, skipDumpster, dumpsterPath, recursive, dumpdirentries);
+                processFiles(filesInFolder, workDir + "/" + i, skipDumpster, dumpsterPath, recursive, dumpdirentries, 0);
             }
             
             //if just removing a file, go for it, exit if error
@@ -251,7 +332,7 @@ int main(int argc, char* argv[]) {
     }
     
     //process the file list
-    processFiles(filesToRemove, workDir, skipDumpster, dumpsterPath, recursive, dumpdirentries);
+    processFiles(filesToRemove, workDir, skipDumpster, dumpsterPath, recursive, dumpdirentries, dumpDisk);
     
     
 //
