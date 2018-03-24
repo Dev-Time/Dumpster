@@ -16,6 +16,7 @@
 #include <chrono>
 #include <fstream>
 
+
 using namespace std;
 
 int linkE() {
@@ -115,9 +116,8 @@ int partitionThroughput() {
 
 int rmExperiemnt(){
     //Setup
-    cout << "Setting up Partition Copy Experiment.\n";
-    const char* testFile = "/media/sf_DistributedSystems/Demos.mp4";
-    const char* testLocation = "testBigFile.mp4";
+    cout << "Setting up Partition RM Experiment.\n";
+    const char* testFile = "/media/sf_DistributedSystems/testbigfile.dat";
 // Record start time
     int size = filesize(testFile);
 
@@ -128,18 +128,14 @@ int rmExperiemnt(){
 //    cin.ignore();
     auto start = chrono::high_resolution_clock::now();
 
-    /*FILE *src = fopen(testFile, "rb"), *dest = fopen(testLocation, "wb");
-    char copybuf[16384];
-    int len;
-    while ((len = fread(copybuf, 1, sizeof(copybuf), src)) > 0) fwrite(copybuf, 1, len, dest);
-    fclose(src);
-    fclose(dest);*/
+    //call rm please
+    system("rm /media/sf_DistributedSystems/testbigfile.dat");
 
 
 // Record end time
     auto finish = std::chrono::high_resolution_clock::now();
     chrono::duration<double> elapsed = finish - start;
-    cout << "Elapsed time for link from partition: " << elapsed.count() << " s\n";
+    cout << "Elapsed time for our rm: " << elapsed.count() << " s\n";
     cout << "Throughput " << size/elapsed.count() << " bytes/s\n";
 
     return 1;
@@ -152,6 +148,7 @@ int main() {
     //linkE();
     //cout << "\n---------------------------------------\n";
     //renameE();
-    partitionThroughput();
+    //partitionThroughput();
+    rmExperiemnt();
     return 1;
 }
