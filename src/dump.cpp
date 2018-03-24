@@ -1,5 +1,5 @@
 //
-// Created by Matt Jackman on 3/20/18.
+// Created by Luke Gardner on 3/20/18.
 // export DUMPSTER=/home/student/DUMPSTER/
 //
 
@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <cstring>
 #include <libgen.h>
+#include <sys/stat.h>
 
 using namespace std;
 
@@ -29,60 +30,73 @@ bool contains(char* tofind, vector<struct dirent*> vector) {
     return found;
 }
 
+int recurse_remove(DIR *dp, string path){
+    struct dirent *d;
+    DIR *dpN;
+    struct stat s;
+    d = readdir(dp);
+    while (d) {
+        string oldfile = path + d->d_name;
+        if(oldfile.compare(path + ".") != 0 && oldfile.compare(path + "..") != 0){
+            if( stat(oldfile.c_str(),&s) == 0 )
+            {
+                if( s.st_mode & S_IFDIR )
+                {
+                    //it's a directory
+                    dpN = opendir(oldfile.c_str());
+                    if (dpN == NULL) {
+                        perror("open");
+                        exit(1);
+                    }
+                    recurse_remove(dpN, oldfile + "/");
+                    rmdir(oldfile.c_str());
+                }else {
+                    unlink(oldfile.c_str());
+                }
+            }
+        }
+        d = readdir(dp);
+    }
+    closedir(dp);
+}
+
 int main(int argc, char* argv[]) {
+    string fileName;
     DIR* dumpdir;
+    vector<struct dirent*> currentdirentries;
     struct dirent* dumpdirentry;
     vector<struct dirent*> dumpdirentries;
     vector<string> filesToRestore;
     string dumpsterPath;
     string dumpsterEnvVar = "DUMPSTER";
+    string workDir = get_current_dir_name();
+    DIR *dp;
 
     dumpsterPath = getenv(dumpsterEnvVar.c_str());
 
-    if (dumpsterPath.empty()) {
-        printf("No match for '%s' in environment\n", dumpsterPath.c_str());
-        exit(-1);
-    } else {
-        printf("TEST");
-    }
-    //parse args, handle -h flag
-    for (int i = 1; i < argc; ++i) {
-        if (strcmp(argv[i], "-h") == 0) {
-            cout << "empties the DUMPSTER folder" << endl;
-            exit(1);
-        }
-    }
+    //open the dumpster dierectory
     dumpdir = opendir(dumpsterPath.c_str());
     if (dumpdir == nullptr) {
-        perror("directory not valid");
+        perror("open");
         exit(-6);
     }
-    while ((dumpdirentry = readdir (dumpdir)) != NULL) {
-          printf("%s\n", dumpdirentry->d_name);
-          unlink(dumpsterPath.c_str());
-       }
+
+    //read the dumpster directory
     dumpdirentry = readdir(dumpdir);
     while (dumpdirentry) {
         dumpdirentries.push_back(dumpdirentry);
         dumpdirentry = readdir(dumpdir);
-        if(){//check to see if the current file to be removed is a directory or not
-
-        }
     }
-//    DIR *dir;
-//    struct dirent *ent;
-//    if ((dir = opendir ("c:\\src\\")) != NULL) {
-//        /* print all the files and directories within directory */
-//        while ((ent = readdir (dir)) != NULL) {
-//            printf ("%s\n", ent->d_name);
-//        }
-//        closedir (dir);
-//    } else {
-//        /* could not open directory */
-//        perror ("");
-//        return EXIT_FAILURE;
-//    }
 
-    closedir(dumpdir);
+    dp = opendir(dumpsterPath.c_str());
+    if (dp == NULL) {
+        perror("open");
+        exit(1);
+    }
+
+    recurse_remove(dp, dumpsterPath);
+
+
+    //closedir(dp);
     return 0;
 }
