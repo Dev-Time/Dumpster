@@ -44,6 +44,7 @@ int main(int argc, char* argv[]) {
 
     dumpsterPath = getenv(dumpsterEnvVar.c_str());
 
+    //if empty exit
     if (dumpsterPath.empty()) {
         printf("No match for '%s' in environment\n", dumpsterPath.c_str());
         exit(-1);
@@ -51,6 +52,7 @@ int main(int argc, char* argv[]) {
         //printf("TEST");
     }
 
+    //if no arguments provided exit and tell user.
     if (argc < 2) {
         perror("No File Argument given. use \"dv -h\" for help.");
         exit(-2);
@@ -58,34 +60,40 @@ int main(int argc, char* argv[]) {
         fileName = argv[1];
     }
 
+    //current directory to restore things too
     curdir = opendir(workDir.c_str());
     if (curdir == nullptr) {
         perror("open");
         exit(-3);
     }
 
+    //read the current directory
     currentdirentry = readdir(curdir);
     while (currentdirentry) {
         currentdirentries.push_back(currentdirentry);
         currentdirentry = readdir(curdir);
     }
 
+    //open the dumpster dierectory
     dumpdir = opendir(dumpsterPath.c_str());
     if (dumpdir == nullptr) {
         perror("open");
         exit(-6);
     }
 
+    //read the dumpster directory
     dumpdirentry = readdir(dumpdir);
     while (dumpdirentry) {
         dumpdirentries.push_back(dumpdirentry);
         dumpdirentry = readdir(dumpdir);
     }
 
+    //figure out what file to restore from the arguments
     for (int i = 1; i < argc; ++i) {
         filesToRestore.emplace_back(argv[i]);
     }
 
+    //restore the files
     for (const auto &i : filesToRestore) {
 //        cout << i->d_name << endl;
 
@@ -93,8 +101,10 @@ int main(int argc, char* argv[]) {
             cout << "arg is a folder" << endl;
         }
 
+        //create the new file in the working (current) directory
         string newfile = workDir + "/" + i;
 
+        //if it is a folder, recurse, if not copy over
         if (contains((char *) i.c_str(), currentdirentries)) {
             bool fixed = false;
             for (int j = 1; j < 10; ++j) {
@@ -111,8 +121,10 @@ int main(int argc, char* argv[]) {
             }
         }
 
+        //define the old file
         string oldfile = dumpsterPath + "/" + i;
 
+        //rename the old file
         if (rename(oldfile.c_str(), newfile.c_str()) != 0) {
             cout << "rename error" << endl;
             cout << errno << endl;
