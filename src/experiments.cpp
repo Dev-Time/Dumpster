@@ -14,6 +14,7 @@
 #include <cstring>
 #include <libgen.h>
 #include <chrono>
+#include <fstream>
 
 using namespace std;
 
@@ -74,12 +75,83 @@ int renameE() {
     return 1;
 }
 
+std::ifstream::pos_type filesize(const char* filename)
+{
+    std::ifstream in(filename, std::ifstream::ate | std::ifstream::binary);
+    return in.tellg();
+}
+
+int partitionThroughput() {
+    //Setup
+    cout << "Setting up Partition Copy Experiment.\n";
+    const char* testFile = "/media/sf_DistributedSystems/Demos.mp4";
+    const char* testLocation = "testBigFile.mp4";
+// Record start time
+    int size = filesize(testFile);
+
+    cout << "Size = " << size << " bytes\n";
+
+// Portion of code to be timed
+//    cout << "Hit enter to proceed with experiment.\n";
+//    cin.ignore();
+    auto start = chrono::high_resolution_clock::now();
+
+    FILE *src = fopen(testFile, "rb"), *dest = fopen(testLocation, "wb");
+    char copybuf[16384];
+    int len;
+    while ((len = fread(copybuf, 1, sizeof(copybuf), src)) > 0) fwrite(copybuf, 1, len, dest);
+    fclose(src);
+    fclose(dest);
+
+
+// Record end time
+    auto finish = std::chrono::high_resolution_clock::now();
+    chrono::duration<double> elapsed = finish - start;
+    cout << "Elapsed time for link from partition: " << elapsed.count() << " s\n";
+    cout << "Throughput " << size/elapsed.count() << " bytes/s\n";
+
+    return 1;
+}
+
+int rmExperiemnt(){
+    //Setup
+    cout << "Setting up Partition Copy Experiment.\n";
+    const char* testFile = "/media/sf_DistributedSystems/Demos.mp4";
+    const char* testLocation = "testBigFile.mp4";
+// Record start time
+    int size = filesize(testFile);
+
+    cout << "Size = " << size << " bytes\n";
+
+// Portion of code to be timed
+//    cout << "Hit enter to proceed with experiment.\n";
+//    cin.ignore();
+    auto start = chrono::high_resolution_clock::now();
+
+    /*FILE *src = fopen(testFile, "rb"), *dest = fopen(testLocation, "wb");
+    char copybuf[16384];
+    int len;
+    while ((len = fread(copybuf, 1, sizeof(copybuf), src)) > 0) fwrite(copybuf, 1, len, dest);
+    fclose(src);
+    fclose(dest);*/
+
+
+// Record end time
+    auto finish = std::chrono::high_resolution_clock::now();
+    chrono::duration<double> elapsed = finish - start;
+    cout << "Elapsed time for link from partition: " << elapsed.count() << " s\n";
+    cout << "Throughput " << size/elapsed.count() << " bytes/s\n";
+
+    return 1;
+}
+
 int main() {
     cout << "These experiments expect test.txt to be present before you run them. Please ensure that file is there.\n"
             "Hit enter to proceed with experiment.\n";
     cin.ignore();
-    linkE();
-    cout << "\n---------------------------------------\n";
-    renameE();
+    //linkE();
+    //cout << "\n---------------------------------------\n";
+    //renameE();
+    partitionThroughput();
     return 1;
 }
