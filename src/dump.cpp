@@ -43,9 +43,15 @@ int main(int argc, char* argv[]) {
         printf("No match for '%s' in environment\n", dumpsterPath.c_str());
         exit(-1);
     } else {
-        //printf("TEST");
+        printf("TEST");
     }
-
+    //parse args, handle -h flag
+    for (int i = 1; i < argc; ++i) {
+        if (strcmp(argv[i], "-h") == 0) {
+            cout << "empties the DUMPSTER folder" << endl;
+            exit(1);
+        }
+    }
     dumpdir = opendir(dumpsterPath.c_str());
     if (dumpdir == nullptr) {
         perror("directory not valid");
