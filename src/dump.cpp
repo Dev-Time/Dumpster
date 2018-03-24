@@ -57,9 +57,9 @@ int main(int argc, char* argv[]) {
         perror("directory not valid");
         exit(-6);
     }
-    while ((dumpdirentry = readdir (dir)) != NULL) {
+    while ((dumpdirentry = readdir (dumpdir)) != NULL) {
           printf("%s\n", dumpdirentry->d_name);
-          unlink(dumpsterPath);
+          unlink(dumpsterPath.c_str());
        }
     dumpdirentry = readdir(dumpdir);
     while (dumpdirentry) {
